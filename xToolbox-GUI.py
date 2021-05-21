@@ -1,12 +1,14 @@
+#!/usr/bin/env python3
+
 import tkinter as tk
-from tkinter import Message, filedialog, ttk
-import os, sys, shutil, csv, time, ipinfo, datetime, pprint, threading, re
+from tkinter import filedialog, ttk
+import os, shutil, csv, time, ipinfo, datetime, threading, re
 from tkinter.constants import DISABLED
 
 ## Function setup ## 
 
 def workerThread(tasks):
-    """This function runs on another thread to keep GUI responsive, its only purpose is to run other functions, one after another"""
+    """This function runs on another thread to keep GUI responsive, its only purpose is to run other functions, one after another given user input"""
     for task in tasks:
         if task == 'renameFolders':
             renameFolders()
@@ -81,7 +83,7 @@ def printOptions():
 
     tasks = []
 
-    # Call functions based on user options
+    # Append functions to tasks based on user input
     if user_rename_pcap_folders == "Yes":
         tasks.append('renameFolders')
     if user_convert_pcap_files == "Yes":
@@ -93,10 +95,12 @@ def printOptions():
     if user_create_histogram == "Yes":
         tasks.append('createHistogram')
 
+    """ Run selected tasks on a separate thread"""
     threading.Thread(target=workerThread, args=(tasks,)).start()
 
 def renameFolders():
-    output_window.insert('end', '-'*15 + '\nRenaming folders..' + '\n')
+    """A side-effect of using logrotated is the renaming of files e.g .pcap -> .pcap.1, this function fixes that"""
+    output_window.insert('end', '-'*15 + '\nRenaming files and folders..' + '\n')
     working_dir = folder_path.get()
     os.chdir(working_dir)
     working_dir_folders = os.listdir()
@@ -328,6 +332,7 @@ def parseCsv():
                         continue
                     else:
                         skip_line = False
+                        """Don't count tcp ACK (66 bytes)"""
                         if row[3] == '66':
                             line_count += 1
                             total_count += 1
@@ -353,6 +358,7 @@ def parseCsv():
     for item in data_table:
         data_table[item]['total'] = data_table[item]['sent'] + data_table[item]['received']
     
+    """Started out using MiBs, should have used MBs instead, it is what it is"""
     for item in data_table:
         data_table[item]['sent'] = round(data_table[item]['sent'] / (1024*1024),2)
         data_table[item]['received'] = round(data_table[item]['received'] / (1024*1024),2)
@@ -615,7 +621,7 @@ def createHistogram():
 root = tk.Tk()
 root.title('xToolbox')
 
-# Window dimensions
+# Window dimensions, pixels
 window_width = 800
 window_height = 600
 
@@ -694,6 +700,7 @@ create_histogram_button.grid(row=7, column=1, sticky=tk.W)
 start_button = tk.Button(root, text='Go!', command=printOptions)
 start_button.grid(row=1, column=3, sticky=tk.W)
 
+# Log output
 output_window = tk.Text(root, height=25, pady=10)
 output_window.grid(row=9, column=1, columnspan=3)
 
